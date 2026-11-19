@@ -36,38 +36,47 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().getDecorView().setSystemUiVisibility(5894|1024|512);prefs=getSharedPreferences("glassos",MODE_PRIVATE);slots=new String[9];for(int i=0;i<9;i++)slots[i]=prefs.getString("slot"+i,defaults[i]);render();handler.post(ticker);}
     @Override protected void onDestroy(){handler.removeCallbacks(ticker);super.onDestroy();}
     void render(){
-        focusables.clear();root=new FrameLayout(this);root.setBackgroundResource(com.glassos.launcher.R.drawable.mountains);setContentView(root);
+        focusables.clear();root=new FrameLayout(this);root.setBackgroundResource(com.glassos.launcher.R.drawable.forest);setContentView(root);
         LinearLayout all=vertical();all.setGravity(Gravity.TOP);all.setPadding(dp(40),dp(20),dp(40),dp(22));root.addView(all,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=horizontal();all.addView(top,new LinearLayout.LayoutParams(-1,dp(42)));
-        TextView city=text("⌖  GLASSOS  •  HY260 PRO",14,true);city.setGravity(Gravity.CENTER_VERTICAL);top.addView(city,new LinearLayout.LayoutParams(0,-1,1));
-        TextView network=text("◉ Сеть      ⚙ Настройки",14,false);network.setFocusable(true);network.setOnClickListener(v->showQuickPanel());network.setPadding(dp(15),0,dp(15),0);network.setBackground(glass(0x667c9ab0,0x88ffffff,26));top.addView(network,new LinearLayout.LayoutParams(-2,dp(40)));
+        View leftSpacer=new View(this);top.addView(leftSpacer,new LinearLayout.LayoutParams(0,-1,1));
+        TextView network=text("⚙",24,false);network.setFocusable(true);network.setOnClickListener(v->openFactorySettings());network.setPadding(dp(15),0,dp(15),0);network.setBackground(glass(0x44608096,0x88ffffff,26));top.addView(network,new LinearLayout.LayoutParams(-2,dp(40)));
         LinearLayout timeArea=vertical();timeArea.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);all.addView(timeArea,new LinearLayout.LayoutParams(-1,0,1));
-        clock=text("10:52",100,true);clock.setGravity(Gravity.LEFT|Gravity.BOTTOM);clock.setTextColor(0xe5ffffff);timeArea.addView(clock,new LinearLayout.LayoutParams(-1,dp(112)));
+        clock=text("10:52",100,false);clock.setGravity(Gravity.LEFT|Gravity.BOTTOM);clock.setTextColor(0xe5ffffff);timeArea.addView(clock,new LinearLayout.LayoutParams(-1,dp(112)));
         date=text("",16,false);date.setGravity(Gravity.LEFT);timeArea.addView(date);
-        status=text("Liquid Glass  •  Предпросмотр",12,false);status.setGravity(Gravity.LEFT);status.setTextColor(0xccffffff);timeArea.addView(status);
+        status=text("",12,false);
         mainTiles=horizontal();mainTiles.setGravity(Gravity.CENTER);all.addView(mainTiles,new LinearLayout.LayoutParams(-1,dp(125)));
-        addTile("▣","HDMI",()->openSystem("HDMI"));addTile("▤","USB",()->openSystem("USB"));addTile("◈","Приложения",this::showApps);addTile("▣","Магазин",()->launchKnown("com.android.vending"));addTile("⚙","Настройки",this::showSettings);
+        addTile("","HDMI",()->openSystem("HDMI"));addTile("","USB",()->openSystem("USB"));addTile("","Приложения",this::showApps);addTile("","Медиа",()->launchKnown("com.android.gallery3d","com.android.music","com.google.android.youtube.tv"));addTile("","Настройки",this::openFactorySettings);
         View gap=new View(this);all.addView(gap,new LinearLayout.LayoutParams(1,dp(24)));
         HorizontalScrollView scroll=new HorizontalScrollView(this);scroll.setHorizontalScrollBarEnabled(false);scroll.setFillViewport(true);all.addView(scroll,new LinearLayout.LayoutParams(-1,dp(96)));
         dock=horizontal();dock.setPadding(dp(12),dp(8),dp(12),dp(8));dock.setBackground(glass(0x9a243b4c,0x99ffffff,27));scroll.addView(dock,new android.widget.FrameLayout.LayoutParams(-1,-1));
         for(int i=0;i<slots.length;i++)addSlot(i);
         if(!focusables.isEmpty())focusables.get(0).requestFocus();
     }
+    int[] tileImages={R.drawable.tile0,R.drawable.tile1,R.drawable.tile2,R.drawable.tile3,R.drawable.tile4};
     void addTile(String symbol,String label,Runnable action){
-        LinearLayout item=vertical();item.setPadding(dp(4),dp(10),dp(4),dp(10));
-        TextView icon=text(symbol,34,true);item.addView(icon,new LinearLayout.LayoutParams(-1,0,1));
-        TextView caption=text(label,14,false);item.addView(caption,new LinearLayout.LayoutParams(-1,dp(32)));
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-1,1);p.setMargins(dp(6),0,dp(6),0);mainTiles.addView(item,p);
-        focusStyle(item,glass(0x88415c70,0x99ffffff,22),glass(0xc25a93bc,0xffffffff,22));item.setOnClickListener(v->action.run());item.setOnLongClickListener(v->{showContext(label);return true;});
+        final int index=mainTiles.getChildCount();
+        FrameLayout item=new FrameLayout(this);
+        ImageView art=new ImageView(this);art.setImageResource(tileImages[index]);art.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        item.addView(art,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-1,1);p.setMargins(dp(3),0,dp(3),0);mainTiles.addView(item,p);
+        item.setFocusable(true);focusables.add(item);
+        item.setOnFocusChangeListener((v,focused)->{v.animate().scaleX(focused?1.09f:1).scaleY(focused?1.09f:1).setDuration(140).start();v.setAlpha(focused?1f:.86f);});
+        item.setOnClickListener(v->action.run());
     }
+    void openFactorySettings(){
+        try{startActivity(new Intent(Settings.ACTION_SETTINGS));}
+        catch(Exception e){Toast.makeText(this,"Штатные настройки недоступны через Android Intent",Toast.LENGTH_LONG).show();}
+    }
+    int[] dockImages={R.drawable.dock0,R.drawable.dock1,R.drawable.dock2,R.drawable.dock3,R.drawable.dock4,R.drawable.dock5,R.drawable.dock6,R.drawable.dock7,R.drawable.dock8};
     void addSlot(int index){
         String pkg=slots[index];String label=slotLabel(pkg);int color=slotColor(pkg);
         LinearLayout item=vertical();LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);lp.setMargins(dp(3),0,dp(3),0);dock.addView(item,lp);
-        FrameLayout iconBox=new FrameLayout(this);GradientDrawable bg=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{color,0xff263b53});bg.setCornerRadius(dp(15));iconBox.setBackground(bg);
+        FrameLayout iconBox=new FrameLayout(this);GradientDrawable bg=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{color,0xff263b53});bg.setCornerRadius(dp(15));iconBox.setBackground(glass(0x77608095,0x99ffffff,17));
         ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setPadding(dp(8),dp(8),dp(8),dp(8));
         Drawable appIcon=null;try{if(!pkg.startsWith("@"))appIcon=getPackageManager().getApplicationIcon(pkg);}catch(Exception ignored){}
         if(appIcon!=null){image.setImageDrawable(appIcon);iconBox.addView(image,new FrameLayout.LayoutParams(-1,-1));}
-        else {TextView sym=text(slotSymbol(pkg),28,true);iconBox.addView(sym,new FrameLayout.LayoutParams(-1,-1));}
+        else {image.setImageResource(dockImages[index]);iconBox.addView(image,new FrameLayout.LayoutParams(-1,-1));}
         item.addView(iconBox,new LinearLayout.LayoutParams(dp(57),dp(57)));
         TextView caption=text(label,10,false);caption.setSingleLine(true);caption.setEllipsize(android.text.TextUtils.TruncateAt.END);item.addView(caption,new LinearLayout.LayoutParams(-1,dp(19)));
         focusStyle(item,glass(0x00334e63,0x00ffffff,16),glass(0x9977b9e9,0xffd6f8ff,16));
@@ -76,7 +85,7 @@ public class MainActivity extends Activity {
     String slotLabel(String p){switch(p){case "@files":return "Файлы";case "@gallery":return "Галерея";case "@browser":return "Браузер";case "@hdmi":return "HDMI";case "@settings":return "Настройки";case "@all":return "Все";default:try{return String.valueOf(getPackageManager().getApplicationLabel(getPackageManager().getApplicationInfo(p,0)));}catch(Exception e){if(p.contains("netflix"))return "Netflix";if(p.contains("youtube"))return "YouTube";if(p.contains("vending"))return "Google Play";return "Приложение";}}}
     String slotSymbol(String p){if(p.contains("netflix"))return "N";if(p.contains("youtube"))return "▶";if(p.equals("@hdmi"))return "▣";if(p.equals("@settings"))return "⚙";if(p.equals("@files"))return "▤";if(p.equals("@browser"))return "◎";if(p.equals("@all"))return "•••";return "✦";}
     int slotColor(String p){if(p.contains("netflix"))return 0xffc41b2a;if(p.contains("youtube"))return 0xffed3131;if(p.contains("vending"))return 0xff27a88c;if(p.equals("@hdmi"))return 0xff239b79;if(p.equals("@settings"))return 0xff607a92;return 0xff3779b8;}
-    void openSlot(String pkg){switch(pkg){case "@all":showApps();return;case "@settings":showSettings();return;case "@hdmi":openSystem("HDMI");return;case "@files":try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivity(i);}catch(Exception e){showApps();}return;case "@browser":launchKnown("com.android.chrome","com.android.browser");return;case "@gallery":launchKnown("com.android.gallery3d","com.google.android.apps.photos");return;default:launchKnown(pkg);}}
+    void openSlot(String pkg){switch(pkg){case "@all":showApps();return;case "@settings":openFactorySettings();return;case "@hdmi":openSystem("HDMI");return;case "@files":try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivity(i);}catch(Exception e){showApps();}return;case "@browser":launchKnown("com.android.chrome","com.android.browser");return;case "@gallery":launchKnown("com.android.gallery3d","com.google.android.apps.photos");return;default:launchKnown(pkg);}}
     void slotMenu(int index){String[] options={"Открыть","Заменить приложение","Вернуть стандартную иконку","Поменять местами с другой ячейкой"};new AlertDialog.Builder(this).setTitle(slotLabel(slots[index])).setItems(options,(d,n)->{if(n==0)openSlot(slots[index]);else if(n==1)chooseSlot(index);else if(n==2){slots[index]=defaults[index];saveSlots();render();}else swapSlot(index);}).show();}
     void chooseSlot(int index){PackageManager pm=getPackageManager();Intent q=new Intent(Intent.ACTION_MAIN);q.addCategory(Intent.CATEGORY_LAUNCHER);List<ResolveInfo> list=pm.queryIntentActivities(q,0);Collections.sort(list,new ResolveInfo.DisplayNameComparator(pm));String[] names=new String[list.size()];for(int j=0;j<names.length;j++)names[j]=String.valueOf(list.get(j).loadLabel(pm));new AlertDialog.Builder(this).setTitle("Закрепить приложение").setItems(names,(d,n)->{slots[index]=list.get(n).activityInfo.packageName;saveSlots();render();}).setNegativeButton("Отмена",null).show();}
     void swapSlot(int index){String[] names=new String[slots.length];for(int i=0;i<names.length;i++)names[i]=(i+1)+". "+slotLabel(slots[i]);new AlertDialog.Builder(this).setTitle("Переместить в ячейку").setItems(names,(d,n)->{String tmp=slots[n];slots[n]=slots[index];slots[index]=tmp;saveSlots();render();}).show();}
